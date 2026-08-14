@@ -43,13 +43,13 @@
 
 ```sh
 dsh plugin --profile web add \
-  https://github.com/<你的用户名>/plugin-description/releases/download/v1.1.1/dsh-plugin-description-1.1.1.tgz
+  https://github.com/MysaDC/plugin-description/releases/download/v1.1.1/dsh-plugin-description-1.1.1.tgz
 ```
 
 也可以直接安装固定 Git tag(无需构建:仓库提交了 `lib/` 构建产物,安装时不跑任何脚本):
 
 ```sh
-dsh plugin --profile web add github:<你的用户名>/plugin-description#v1.1.1
+dsh plugin --profile web add github:MysaDC/plugin-description#v1.1.1
 ```
 
 安装后重启:
@@ -74,7 +74,7 @@ dsh web --dump-config | grep -n "plugin-description"
 
 ```sh
 # 升级到指定版本(或指定 tag)
-dsh plugin --profile web add github:<你的用户名>/plugin-description#v1.1.2
+dsh plugin --profile web add github:MysaDC/plugin-description#v1.1.2
 
 # 卸载(依赖与 bundle 层一并移除,组合文件不被改写)
 dsh plugin --profile web remove dsh-plugin-description
