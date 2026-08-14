@@ -72,13 +72,6 @@ jobs:
           cd dist/package
           zip -r "../../dsh-plugin-description-v${{ steps.ver.outputs.version }}.zip" .
 
-      - name: 打包源码档案(Source code.zip / tar.gz)
-        run: |
-          git archive --format=zip --prefix=plugin-description/ \
-            -o "plugin-description-source-v${{ steps.ver.outputs.version }}.zip" HEAD
-          git archive --format=tar.gz --prefix=plugin-description/ \
-            -o "plugin-description-source-v${{ steps.ver.outputs.version }}.tar.gz" HEAD
-
       - name: 发布 GitHub Release
         uses: softprops/action-gh-release@v3
         with:
