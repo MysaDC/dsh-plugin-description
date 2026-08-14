@@ -42,20 +42,19 @@
 ### 从 GitHub Release 安装(推荐)
 
 ```sh
-dsh plugin --profile web add \
-  https://github.com/MysaDC/plugin-description/releases/download/v1.1.1/dsh-plugin-description-1.1.1.tgz
+npx @deepseek-ai/dsh plugin --profile web add https://github.com/MysaDC/plugin-description/releases/download/v1.1.1/dsh-plugin-description-1.1.1.tgz
 ```
 
 也可以直接安装固定 Git tag(无需构建:仓库提交了 `lib/` 构建产物,安装时不跑任何脚本):
 
 ```sh
-dsh plugin --profile web add github:MysaDC/plugin-description#v1.1.1
+npx @deepseek-ai/dsh plugin --profile web add github:MysaDC/plugin-description#v1.1.1
 ```
 
 安装后重启:
 
 ```sh
-dsh web
+npx @deepseek-ai/dsh web
 ```
 
 > 若 pnpm 提示 `ERR_PNPM_ADDING_TO_ROOT`,在 profile 目录的 `.npmrc` 加一行
@@ -64,7 +63,7 @@ dsh web
 ### 验证
 
 ```sh
-dsh web --dump-config | grep -n "plugin-description"
+npx @deepseek-ai/dsh web --dump-config | grep -n "plugin-description"
 ```
 
 输出中出现 `plugin-description`,并且在「设置 → 插件 → 插件列表」中每张卡片都带说明,
@@ -74,10 +73,10 @@ dsh web --dump-config | grep -n "plugin-description"
 
 ```sh
 # 升级到指定版本(或指定 tag)
-dsh plugin --profile web add github:MysaDC/plugin-description#v1.1.2
+npx @deepseek-ai/dsh plugin --profile web add github:MysaDC/plugin-description#v1.1.2
 
 # 卸载(依赖与 bundle 层一并移除,组合文件不被改写)
-dsh plugin --profile web remove dsh-plugin-description
+npx @deepseek-ai/dsh plugin --profile web remove dsh-plugin-description
 ```
 
 随后重启 `dsh web` 生效。
@@ -90,7 +89,7 @@ dsh plugin --profile web add link:$(pwd)
 
 # Windows(pnpm 8 对盘符 link:/file: 规格有解析问题):打 tgz 再装
 npm run build && npm pack --pack-destination dist
-dsh plugin --profile web add .\dist\dsh-plugin-description-<版本>.tgz
+npx @deepseek-ai/dsh plugin --profile web add .\dist\dsh-plugin-description-<版本>.tgz
 ```
 
 ### 手动安装(不想用命令行时)
