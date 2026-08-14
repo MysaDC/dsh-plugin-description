@@ -29,6 +29,9 @@ jobs:
       - name: 打 npm tarball(dsh plugin add 的安装件)
         run: npm pack --pack-destination dist/
 
+      - name: 生成无版本号的 latest 安装件(固定文件名,供 releases/latest/download 跳转)
+        run: cp "dist/dsh-plugin-description-$(node -p "require('./package.json').version").tgz" dist/dsh-plugin-description.tgz
+
       - uses: actions/upload-artifact@v7
         with:
           name: plugin-description-dist
@@ -72,6 +75,8 @@ jobs:
           cd dist/package
           zip -r "../../dsh-plugin-description-v${{ steps.ver.outputs.version }}.zip" .
 
+      # 源码档案不用打包:GitHub 会为每个 tag 自动附带 Source code (zip) 与 Source code (tar.gz)。
+
       - name: 发布 GitHub Release
         uses: softprops/action-gh-release@v3
         with:
@@ -80,5 +85,3 @@ jobs:
           files: |
             dist/*.tgz
             dsh-plugin-description-v${{ steps.ver.outputs.version }}.zip
-            plugin-description-source-v${{ steps.ver.outputs.version }}.zip
-            plugin-description-source-v${{ steps.ver.outputs.version }}.tar.gz

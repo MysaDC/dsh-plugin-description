@@ -39,16 +39,28 @@
 它追加进 `dsh.profile.bundles`,启动时应用包自带的 `cordis.patch.yml` 自动插入组合行
 (宿主行 + 浏览器名册),不需要手改任何组合文件。
 
-### 从 GitHub Release 安装(推荐)
+### 从 GitHub Release 安装(推荐,默认最新版)
 
 ```sh
-npx @deepseek-ai/dsh plugin --profile web add https://github.com/MysaDC/plugin-description/releases/download/v1.1.1/dsh-plugin-description-1.1.1.tgz
+npx @deepseek-ai/dsh plugin --profile web add https://github.com/MysaDC/dsh-plugin-description/releases/latest/download/dsh-plugin-description.tgz
 ```
 
-也可以直接安装固定 Git tag(无需构建:仓库提交了 `lib/` 构建产物,安装时不跑任何脚本):
+上面的命令不带版本号:`releases/latest/download` 永远指向最新 Release 的固定名安装件,
+以后升级重跑同一命令即可。需要固定版本时再写具体版本号(每个 Release 都附带带版本号的 tgz):
 
 ```sh
-npx @deepseek-ai/dsh plugin --profile web add github:MysaDC/plugin-description#v1.1.1
+npx @deepseek-ai/dsh plugin --profile web add https://github.com/MysaDC/dsh-plugin-description/releases/download/v1.2.1/dsh-plugin-description-1.2.1.tgz
+```
+
+也可以从 Git 安装:不带 `#tag` 取默认分支的最新代码,带上 `#tag` 则固定版本
+(无需构建:仓库提交了 `lib/` 构建产物,安装时不跑任何脚本):
+
+```sh
+# 最新代码(默认分支)
+npx @deepseek-ai/dsh plugin --profile web add github:MysaDC/dsh-plugin-description
+
+# 固定版本
+npx @deepseek-ai/dsh plugin --profile web add github:MysaDC/dsh-plugin-description#v1.2.1
 ```
 
 安装后重启:
@@ -72,8 +84,11 @@ npx @deepseek-ai/dsh web --dump-config | grep -n "plugin-description"
 ### 升级与卸载
 
 ```sh
-# 升级到指定版本(或指定 tag)
-npx @deepseek-ai/dsh plugin --profile web add github:MysaDC/plugin-description#v1.1.2
+# 升级到最新版:重跑一次安装命令即可(pnpm 会重新解析 latest 安装件)
+npx @deepseek-ai/dsh plugin --profile web add https://github.com/MysaDC/dsh-plugin-description/releases/latest/download/dsh-plugin-description.tgz
+
+# 固定到指定版本(可选)
+npx @deepseek-ai/dsh plugin --profile web add https://github.com/MysaDC/dsh-plugin-description/releases/download/v1.2.1/dsh-plugin-description-1.2.1.tgz
 
 # 卸载(依赖与 bundle 层一并移除,组合文件不被改写)
 npx @deepseek-ai/dsh plugin --profile web remove dsh-plugin-description
@@ -170,14 +185,10 @@ npm run verify          # 构建 + 完整校验(字典完整性、模块 id、ex
 
 ## 常见问题
 
-**浏览器页白屏或启动失败?** 客户端内核会检查名册里每个插件都进入 ACTIVE;本插件只做
-可选服务读取(`ctx.get` 判空),没有硬注入依赖,不会阻塞引导。若确实出现,把组合行
-`disabled: true` 即可排除。
+**浏览器页白屏或启动失败?** 本插件只做可选服务读取(`ctx.get` 判空),没有硬注入依赖,不会阻塞引导。若确实出现,把组合行`disabled: true` 即可排除。
 
 **想改某条说明文字?** 三种方式:页面里点「编辑说明」直接改(立即生效,普通用户首选);
-插件作者用 `pluginDescriptions.register` 运行时覆盖;或改
-`descriptions/plugin-descriptions.json` 后 `npm run build` 并更新 profile 里的包
-(对所有人生效)。
+插件作者用 `pluginDescriptions.register` 运行时覆盖;或改`descriptions/plugin-descriptions.json` 后 `npm run build` 并更新 profile 里的包(提交合并后对所有人生效)。
 
 **官方插件的说明是哪里来的?** 内置字典提取自 DeepSeek Harness 各官方包的 README 首段,
 并经人工校对;个别条目(id 级,如 codex/claude-code 后端)有专属说明。

@@ -46,18 +46,33 @@ the plugin manager appends it to `dsh.profile.bundles` and applies the bundled
 `cordis.patch.yml` at boot to insert the composition row automatically (host row + browser
 roster) — no manual composition edits.
 
-### Install from GitHub Release (recommended)
+### Install from GitHub Release (recommended, latest by default)
 
 ```sh
 dsh plugin --profile web add \
-  https://github.com/MysaDC/plugin-description/releases/download/v1.1.1/dsh-plugin-description-1.1.1.tgz
+  https://github.com/MysaDC/dsh-plugin-description/releases/latest/download/dsh-plugin-description.tgz
 ```
 
-You can also install a pinned Git tag directly (no build needed — the repo commits the `lib/`
-build output, so no scripts run during install):
+The command above carries no version: `releases/latest/download` always resolves to the
+fixed-name artifact of the newest Release, so upgrading later is just re-running the same
+command. Pin a version only when you need reproducibility (every Release also ships a
+versioned tgz):
 
 ```sh
-dsh plugin --profile web add github:MysaDC/plugin-description#v1.1.1
+dsh plugin --profile web add \
+  https://github.com/MysaDC/dsh-plugin-description/releases/download/v1.2.1/dsh-plugin-description-1.2.1.tgz
+```
+
+You can also install from Git: without `#tag` you get the default branch's latest code, with
+`#tag` the version is pinned (no build needed — the repo commits the `lib/` build output, so
+no scripts run during install):
+
+```sh
+# Latest code (default branch)
+dsh plugin --profile web add github:MysaDC/dsh-plugin-description
+
+# Pinned version
+dsh plugin --profile web add github:MysaDC/dsh-plugin-description#v1.2.1
 ```
 
 Restart after installing:
@@ -81,8 +96,13 @@ Settings → Plugins → Plugin list, means it is loaded.
 ### Upgrade and uninstall
 
 ```sh
-# Upgrade to a specific version (or tag)
-dsh plugin --profile web add github:MysaDC/plugin-description#v1.1.2
+# Upgrade to the latest: just re-run the install command (pnpm re-resolves the latest artifact)
+dsh plugin --profile web add \
+  https://github.com/MysaDC/dsh-plugin-description/releases/latest/download/dsh-plugin-description.tgz
+
+# Pin a specific version (optional)
+dsh plugin --profile web add \
+  https://github.com/MysaDC/dsh-plugin-description/releases/download/v1.2.1/dsh-plugin-description-1.2.1.tgz
 
 # Uninstall (removes the dependency and the bundle layer; composition files untouched)
 dsh plugin --profile web remove dsh-plugin-description
@@ -192,16 +212,11 @@ npm run verify          # build + full validation (dictionary integrity, module 
 
 ## FAQ
 
-**Blank page or boot failure in the browser?** The client kernel requires every roster plugin
-to reach ACTIVE; this plugin only does optional service reads (`ctx.get` with undefined
-checks) and has no hard injected dependencies, so it cannot block boot. If it does happen,
-add `disabled: true` to the composition row to rule it out.
+**Blank page or boot failure in the browser?** this plugin only does optional service reads (`ctx.get` with undefinedchecks) and has no hard injected dependencies, so it cannot block boot. If it does happen,add `disabled: true` to the composition row to rule it out.
 
 **Want to change a description?** Three ways: click "Edit description" on the page (effective
 immediately — the first choice for ordinary users); override at runtime with
-`pluginDescriptions.register` (for plugin authors); or edit
-`descriptions/plugin-descriptions.json`, run `npm run build`, and update the package in the
-profile (effective for everyone).
+`pluginDescriptions.register` (for plugin authors); or edit`descriptions/plugin-descriptions.json`, run `npm run build`, and update the package in the profile (effective for everyone).
 
 **Where do the official plugins' descriptions come from?** The built-in dictionary is
 extracted from the first paragraphs of the DeepSeek Harness package READMEs and manually
