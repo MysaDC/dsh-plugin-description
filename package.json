@@ -1,0 +1,45 @@
+{
+  "name": "dsh-plugin-description",
+  "version": "1.2.1",
+  "private": true,
+  "type": "module",
+  "description": "DeepSeek Harness 组合插件:为 Web 设置中的插件列表页添加中英文功能说明,并提供 pluginDescriptions 服务供其他插件注册自己的说明。",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "files": [
+    "lib",
+    "descriptions",
+    "src",
+    "scripts",
+    "cordis.patch.yml",
+    "README.md",
+    "README_en.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "verify": "node scripts/build.mjs --verify",
+    "regenerate": "node scripts/regenerate-descriptions.mjs"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "cordis",
+    "plugin"
+  ],
+  "license": "MIT"
+}
+
+
+

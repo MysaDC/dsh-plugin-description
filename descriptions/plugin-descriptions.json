@@ -1,0 +1,542 @@
+{
+ "dsh-plugin-description": {
+  "zh": "本插件自身：为 Web 设置中的插件列表页添加中英文功能说明，并发布 pluginDescriptions 服务，供其他插件注册自己的说明。",
+  "en": "The annotator itself: adds bilingual descriptions to the Web Settings plugin list and publishes the pluginDescriptions service for other plugins to register their own descriptions."
+ },
+ "cordis:include": {
+  "zh": "Cordis 内置的 include 插件：把 include 行指向的子组合挂载进宿主组合，是 dsh 组合文件（cordis.yml）的基础行。",
+  "en": "Cordis's built-in include plugin: mounts the sub-composition an include row points at into the host composition — the base row of every dsh composition (cordis.yml)."
+ },
+ "@deepseek-ai/cordis-plugin-timer": {
+  "zh": "Cordis 的定时器插件：向上下文提供 timeout/interval/throttle/debounce 定时能力，并随 fiber 一起释放。",
+  "en": "Disposal-aware timer service for Cordis."
+ },
+ "@deepseek-ai/cordis-plugin-hmr": {
+  "zh": "Cordis 插件的热模块替换（HMR）：开发期间由 Loader 管理的插件代码被热更新。",
+  "en": "Hot module replacement for loader-managed Cordis plugins."
+ },
+ "@deepseek-ai/dsh-llm": {
+  "zh": "提供方无关的 LLM（大语言模型）词汇与抽象服务。本包定义 agent loop（智能体循环）、会话日志和所有插件共同使用的规范词汇。",
+  "en": "Provider-neutral LLM vocabulary and abstract service. This package defines the canonical language spoken by the agent loop, session logs, and every plugin."
+ },
+ "@deepseek-ai/dsh-session": {
+  "zh": "事件溯源的会话日志和内存存储。Session 是 agent（智能体）全部交互历史的仅追加真源，LLM（大语言模型）消息历史由它派生。原始日志之上维护一个 surface 层（产生消息事件的有序投影），以便高效派生和压缩（compaction）。",
+  "en": "Event-sourced session log and in-memory store. A Session is the append-only source of truth for an agent's whole interaction history — the LLM message history is derived from it."
+ },
+ "@deepseek-ai/dsh-typert-registry": {
+  "zh": "生成的 Typert 产物所用的运行时注册表。每个注册项包含某个包在一个 face 上的业务反射信息，以及可选的运行时 Zod schema；ctx.typert 会以原子方式同时注册两者，并在发起调用的 Cordis fiber 释放时一并移除它们。TypeScript 分析和代码生成由 dsh-typert-generator 负责。",
+  "en": "Runtime registry for generated Typert artifacts. A contribution carries one package face's business reflection and optional live Zod schemas; ctx.typert registers both atomically and withdraws them with the calling Cordis fiber."
+ },
+ "@deepseek-ai/dsh-typert-loader": {
+  "zh": "生成的 Typert 产物所用的 Loader 集成，仅支持 Node。该插件需要 ctx.loader 和 ctx.typert；它本身不提供注册表。",
+  "en": "Node-only Loader integration for generated Typert artifacts. The plugin requires ctx.loader and ctx.typert; it does not provide the registry itself."
+ },
+ "@deepseek-ai/dsh-api-gateway": {
+  "zh": "为 Host 与 Client 两侧的 Cordis 环境提供 Typert RPC endpoint。Host 入口提供 ctx.typertGateway，@deepseek-ai/dsh-api-gateway/client 则提供 ctx.remote；两者使用同一份生成的 InvocationDescriptor 约定，并将业务选择交给 API Remotes，将传输、请求关联、信任和响应封装交给 Connection。",
+  "en": "Two-sided Typert RPC endpoint for Host and Client Cordis environments. The Host entry provides ctx.typertGateway, while @deepseek-ai/dsh-api-gateway/client provides ctx.remote; both consume the same generated InvocationDescriptor contract and leave business selection to API Remotes and transport, request correlation, trust, and response envelopes to Connection."
+ },
+ "@deepseek-ai/dsh-session-title": {
+  "zh": "由日志支持的会话标题，提供即时确定性回退与一个可选异步提供方。每次已接受的修订都是仅写入日志的 session/title 事件；foldSessionTitle() 与 ctx.sessionTitle.get() 会选择最新事件，并返回其事件 seq 和时间戳。",
+  "en": "Log-backed session titles with an immediate deterministic fallback and one optional asynchronous provider."
+ },
+ "@deepseek-ai/dsh-session-title-first-prompt-llm": {
+  "zh": "可选的 ctx.sessionTitle 提供方，通过 ctx.llm 总结第一条符合条件的用户消息。它注册 first-prompt 节奏，只在全新非 fork 会话首次创建回退时自动运行，并将结果归因于该消息的确切 seq。自动失败会保留回退，之后只能通过 ctx.sessionTitle.refresh() 重试。",
+  "en": "Optional ctx.sessionTitle provider that summarizes the first eligible human message through ctx.llm."
+ },
+ "@deepseek-ai/dsh-user-questions": {
+  "zh": "用户交互 Service Definition。它定义 ctx.userQuestions，供面向模型的工具或权限插件在需要暂停工作并询问人类决定时使用。",
+  "en": "User-interaction Service Definition. It owns ctx.userQuestions, the service a model-facing tool or permission plugin uses when it needs to pause work and ask the human for a decision."
+ },
+ "@deepseek-ai/dsh-agent": {
+  "zh": "Agent 接口、注册表、进程本地发起方作用域，以及 agent/ 事件词汇。每个插件（UI、钩子、编排器）都面向此处定义的 Agent handle 编程；它不依赖循环，因此循环可以替换。",
+  "en": "Agent interface, registry, process-local initiator scope, and agent/ event vocabulary. Every plugin (UI, hooks, orchestrators) programs against the Agent handle defined here — it has zero loop dependency, so the loop is swappable."
+ },
+ "@deepseek-ai/dsh-agent-default-model": {
+  "zh": "该部署默认值供入口在创建尚无会话级模型选择的 Agent 时使用。AgentDefaultModelConfig 提供 ctx.agentDefaultModel；dsh --profile headless 这类直接入口与 ApiProxy 这类由 Host 支撑的入口读取同一服务，而不是分别持有平行的提供方／模型默认值。",
+  "en": "The deployment default used when an entry point creates an Agent that has no session-local model selection."
+ },
+ "@deepseek-ai/dsh-jobs-local": {
+  "zh": "@deepseek-ai/dsh-jobs 注册表约定的进程本地实现：LocalJobRegistry 把每条记录保存在内存中，按 kind 签发 <kind>-N id，并且只交出全新快照，从不交出实时状态。作为插件加载后即注册为 ctx.jobs。",
+  "en": "Process-local implementation of the @deepseek-ai/dsh-jobs registry contract: LocalJobRegistry keeps every record in memory, issues per-kind <kind>-N ids, and hands out fresh snapshots, never live state."
+ },
+ "@deepseek-ai/dsh-llm-retry": {
+  "zh": "一个函数插件，通过 agent loop（智能体循环）在已关闭步骤上触发的 agent/request-error waterfall（瀑布式事件）应用确切提供方重试策略。它不包装 ctx.llm.stream()：每次适配器调用仍是一次提供方尝试，每次重试都会开启新的编号轮次。",
+  "en": "Function plugin that applies exact-provider retry policy through the agent loop's closed-step agent/request-error waterfall."
+ },
+ "@deepseek-ai/dsh-settings-file": {
+  "zh": "基于文件的设置提供方。一个 YAML 或 JSON 文档承载全部 namespace 分节；外部编辑经 ctx.settings 热发布，update() 在写锁下先重读文档再原子写回，保留用户的 YAML 注释、当前未加载插件所拥有的分节，以及任何本进程尚未观察到的磁盘变更。",
+  "en": "File-backed settings provider. One YAML or JSON document carries every namespace section; external edits hot-publish through ctx.settings, and update() re-reads the document under a writer lock before writing back atomically, pres…"
+ },
+ "@deepseek-ai/dsh-credentials-local": {
+  "zh": "文件型凭据提供方：四层来源，一套明确的优先级——继承的进程环境（始终优先）、$DSH_HOME/.credentials.yaml 文档（可写）、调用目录的 .env 与 $DSH_HOME/.env。",
+  "en": "File-backed credentials provider: four layers, one honest precedence — the inherited process environment (always wins), the $DSH_HOME/.credentials.yaml document (writable), the invocation-cwd .env, and the $DSH_HOME/.env."
+ },
+ "@deepseek-ai/dsh-llm-pi-ai": {
+  "zh": "基于 @earendil-works/pi-ai 的 harness LLM seam 通用多提供方适配器。一个插件实例拥有一份以路由为键的提供方 profile 字典；每个请求使用 GenerateOptions.provider 选择 profile，并针对该路由已配置的 catalog 解析模型。pi-ai 未提供的路由可整体声明，因此接入 OpenAI 兼容网关、自建服务都属于配置而非改代码。",
+  "en": "Generic multi-provider adapter for the harness LLM seam backed by @earendil-works/pi-ai. One plugin instance owns a dict of provider profiles keyed by route; every request selects a profile with GenerateOptions.provider and resolves the model against that route's configured catalog. Routes pi-ai does not provide are declared wholesale, so adding OpenAI-compatible gateways or self-hosted services is configuration, not code."
+ },
+ "@deepseek-ai/dsh-session-persistence-jsonl": {
+  "zh": "JSONL 持久会话存储后端：SessionPersistence 的一个具体实现（dsh-session-persistence seam）。每个会话有一个仅追加的逻辑 JSONL 日志，默认存储为 .jsonl.zstd；禁用压缩时使用原始 .jsonl。",
+  "en": "The JSONL durable session-persistence backend — a concrete SessionPersistence (the dsh-session-persistence seam)."
+ },
+ "@deepseek-ai/dsh-attachment-local": {
+  "zh": "@deepseek-ai/dsh-attachment 的私有本地实现。对象存放在 <DSH_HOME>/attachments/v1/objects/<sha256-prefix>/<sha256>，并通过不透明的 sha256: 标识符寻址；写入使用私有暂存目录、仅所有者可访问的文件与原子且排他的硬链接发布，确保已报告的引用能够在崩溃后继续存在。",
+  "en": "The private local implementation of @deepseek-ai/dsh-attachment. Objects land at <DSH_HOME>/attachments/v1/objects/<sha256-prefix>/<sha256> and are addressed by an opaque sha256: id; writes use a private staging directory, owner-only files, and atomic exclusive hard-link publication so a reported reference survives a crash."
+ },
+ "@deepseek-ai/dsh-session-query-sqlite": {
+  "zh": "具体 ctx.sessionQuery 提供方。SqliteSessionQueryEngine 从 Service Definition 包继承精确读取、跟踪和提供方无关的过滤，并使用 SQLite FTS5 实现其两个全文方法。搜索使用实时优先的逻辑会话语料库，并按每个会话中匹配度最高的事件对跨会话结果分组。",
+  "en": "Concrete ctx.sessionQuery provider. SqliteSessionQueryEngine inherits exact reads, traces, and provider-independent filters from the Service Definition package and implements its two full-text methods with SQLite FTS5."
+ },
+ "@deepseek-ai/dsh-session-projection": {
+  "zh": "会话投影 Service Definition 与驱动注册表。它拥有 ctx.sessionProjections：该注册表在已提交的会话事件上驱动每个已注册的投影单元，并向载体提供完整的最终值，目前包括 api-proxy 历史尾页和 session/projection 推送帧。领域注册的只是纯数学；驱动权归框架。session-projection RFC 记录了设计理由。",
+  "en": "Session-projection Service Definition and drive registry."
+ },
+ "@deepseek-ai/dsh-session-telemetry-otel": {
+  "zh": "遥测 seam 的 OpenTelemetry 后端，也是部署方唯一要加载的条目。其 mode 决定 seam 是实时跟随会话事件、仅在记录反馈时回放权威日志，还是将遥测留在本地。上传模式会原样组合 OTel JS SDK，把每条已交接记录映射到 logger.emit()。",
+  "en": "The OpenTelemetry backend for the telemetry seam — the only entry a deployment loads. Its mode decides whether the seam follows session events live, replays the canonical log only at recorded feedback, or keeps telemetry local. Uploading modes compose the OTel JS SDK as-is and map each handed-over record onto logger.emit()."
+ },
+ "@deepseek-ai/dsh-subprocess-local": {
+  "zh": "@deepseek-ai/dsh-subprocess seam 的本地 Service Provider。LocalSubprocessRuntime 解析本地可执行文件，以显式 stdio spawn 普通 detached 进程树，并通过 node-pty 加平台进程检查实现终端进程。",
+  "en": "Local Service Provider for the @deepseek-ai/dsh-subprocess seam."
+ },
+ "@deepseek-ai/dsh-sandbox-local": {
+  "zh": "dsh-sandbox seam 的本地实现。它选择并缓存一个平台 runner：Linux 优先选择可工作的 bwrap，否则选择 Landlock；macOS 使用 Seatbelt；Windows 使用 ACL 受限令牌 runner。多个候选项会按顺序探测，只有一个候选项时则直接选择。",
+  "en": "Local implementation of the dsh-sandbox seam. It selects and caches one platform runner: Linux prefers a working bwrap then Landlock; macOS uses Seatbelt; Windows uses the ACL restricted-token runner."
+ },
+ "@deepseek-ai/dsh-sandbox-policy": {
+  "zh": "沙箱策略解析的唯一归属位置：部署默认 SandboxMode 与回退根目录，加上每个会话的持久模式覆盖和不可变工作区根目录。每项负责强制执行的能力在每次调用时都会收到一项解析完成的模式与根目录策略；模型在每次请求前会收到当前策略，而不会另收一份能力清单。",
+  "en": "The single owner of sandbox-policy resolution: the deployment's default SandboxMode and fallback root, plus each session's durable mode override and immutable workspace root."
+ },
+ "@deepseek-ai/dsh-bash-sandbox": {
+  "zh": "这是使用沙箱能力的 @deepseek-ai/dsh-shell 执行器 seam 的 Service Provider。加载它时，应用它替代 @deepseek-ai/dsh-bash-local，并同时加载 ctx.sandbox 提供方（例如 @deepseek-ai/dsh-sandbox-local）及 ctx.sandboxPolicy。",
+  "en": "Sandbox-consuming Service Provider for the @deepseek-ai/dsh-shell executor seam. Load it instead of @deepseek-ai/dsh-bash-local, together with a ctx.sandbox provider (e.g."
+ },
+ "@deepseek-ai/dsh-pwsh-sandbox": {
+  "zh": "沙盒消费型的 ctx.shell 执行器 seam 的 PowerShell 实现：每条命令以 pwsh -NoLogo -NoProfile -NonInteractive -Command <command> 运行，经 ctx.sandbox 隔离，选定模式、强制完整性、拒绝事实都盖在每次结算的结果上。",
+  "en": "Sandbox-consuming PowerShell implementation of the ctx.shell executor seam: every command runs as pwsh -NoLogo -NoProfile -NonInteractive -Command <command> confined through ctx.sandbox, with the selected mode, enforcement, and de…"
+ },
+ "@deepseek-ai/dsh-user-approval": {
+  "zh": "与通道无关的一次性审批 seam。ctx.approval.request(req) 返回 allowed-once、rejected、cancelled 或 unavailable；应答者缺失或失败时会以拒绝方式关闭，授权也只适用于所请求的操作。确切事件签名见 approval.md 的生成区块。",
+  "en": "Channel-neutral one-shot approval seam. ctx.approval.request(req) returns allowed-once, rejected, cancelled, or unavailable; missing or failing answerers fail closed, and a grant applies only to the requested action."
+ },
+ "@deepseek-ai/dsh-permission-presets": {
+  "zh": "通过 ctx.permissionPresets（PermissionPresetService）提供面向用户的权限预设。每个配置名称都会将 sandbox/mode 与 approval/policy 组成一组；默认项为 workspace-write（workspace-write + ask）和 danger-full-access（danger-full-access + never）。",
+  "en": "User-facing permission presets through ctx.permissionPresets (PermissionPresetService)."
+ },
+ "@deepseek-ai/dsh-shell-env": {
+  "zh": "工具无关的 shell 环境插件：拥有 ctx.shellEnv 注册表，管理受信任的、每次执行收集的 DSH_ 变量，供模型可见的 shell 工具（dsh-tool-bash、dsh-tool-pwsh）收集进每次 shell 调用的环境。内置 shell 事实（DSH_HOME、DSH_SHELL=1、DSH_SESSION_ID）归注册表自身所有。",
+  "en": "The tool-independent shell environment plugin: owns the ctx.shellEnv registry of trusted, per-execution DSH_ variables that the model-facing shell tools (dsh-tool-bash, dsh-tool-pwsh) collect into every shell call's environment."
+ },
+ "@deepseek-ai/dsh-tool-bash": {
+  "zh": "模型侧 bash 工具，注册在 ctx.shell 执行器 seam 上。前台执行始终位于该 seam 之后；后台进程句柄会注册到通用 ctx.jobs 运行时，并通过 job_output、job_list 和 job_kill 控制；这些工具由 @deepseek-ai/dsh-tool-jobs 提供。",
+  "en": "The model-facing bash tool registered over the ctx.shell executor seam."
+ },
+ "@deepseek-ai/dsh-tool-pwsh": {
+  "zh": "注册在 ctx.shell 执行器 seam 之上的面向模型的 pwsh 工具。面向由 PowerShell 执行器（如 @deepseek-ai/dsh-pwsh-local）支撑 ctx.shell 的 Windows 组合；工具约定是 PowerShell 方言：原生 C:\\... 路径与 $env:NAME 变量。",
+  "en": "The model-facing pwsh tool registered over the ctx.shell executor seam. Intended for Windows compositions where a PowerShell executor (e.g."
+ },
+ "@deepseek-ai/dsh-tool-jobs": {
+  "zh": "ctx.jobs 的面向模型控制器：三个与 kind 无关的工具、完成通知和一个后台工作提示词区段。加载该插件会附加 ctx.jobs.start() 所要求的控制器。",
+  "en": "The model-facing controller for ctx.jobs: three kind-independent tools, completion notices, and one background-work prompt section. Loading the plugin attaches the controller required by ctx.jobs.start()."
+ },
+ "@deepseek-ai/dsh-fs-observation-policy": {
+  "zh": "fs-observation-policy 插件：它记录观测到的存在或缺失状态，并在 ctx.fs 提供方约定（@deepseek-ai/dsh-fs）之上增加编辑前读取和带防护的写入/编辑；它通过 fs/ 事件门禁参与，不是通过方法服务。该插件不注册 ctx.fsPolicy 服务，也没有公开的 read/write/edit/resolve 方法。",
+  "en": "The fs-observation-policy plugin: it records observed presence or absence and adds read-before-edit plus guarded write/edit on top of the ctx.fs provider contract (@deepseek-ai/dsh-fs) — through the fs/ event gate, NOT through a m…"
+ },
+ "@deepseek-ai/dsh-tool-fs": {
+  "zh": "面向模型的文件系统工具（read、read_image、write、edit）及其执行器。这是文件系统栈的消费方层：拥有工具名称、JSON Schema、参数校验、提示词段、读取窗口逻辑和结果格式化。它直接通过 ctx.fs 提供方约定（@deepseek-ai/dsh-fs）读取／写入／编辑。",
+  "en": "The model-facing filesystem tools — read, read_image, write, edit — and their executor."
+ },
+ "@deepseek-ai/dsh-tool-fs-search": {
+  "zh": "面向模型的文件系统发现工具（glob、grep），由打包的 ripgrep 二进制（@vscode/ripgrep）支持，而不是由 ctx.fs 提供方方法或系统 rg 安装支持。每次调用都通过 ctx.subprocess seam 以固定 argv 向量 spawn 该二进制，解析原始 rg 输出，并返回相对于工作目录的规范值。",
+  "en": "The model-facing filesystem discovery tools — glob and grep — are backed by the packaged ripgrep binary (@vscode/ripgrep), not by ctx.fs provider methods and not by a system rg install. Each call spawns the binary through the ctx.subprocess seam with a fixed argv vector, parses the raw rg output, and returns canonical values relative to the working directory."
+ },
+ "@deepseek-ai/dsh-agent-instructions": {
+  "zh": "为每个会话加载与 AGENTS.md 兼容的工作区指令文件。该插件会将初始的用户全局指令与项目指令链注入持久历史，随后发现嵌套文件，并在成功的文件系统工具调用后报告后续变更或移除。",
+  "en": "Per-session workspace instruction loading for AGENTS.md-compatible files."
+ },
+ "@deepseek-ai/dsh-skill": {
+  "zh": "纯 agent skill 提供方注册表：负责 ctx.skills 接口。它不知道 skill 来自本地文件、嵌入式插件数据还是 HTTP；提供方通过 ctx.skills.registerProvider(...) 注册来源，注册表按宿主 + scope 分层，已发布的本地实现是 dsh-skill-filesystem。",
+  "en": "Pure agent skill provider registry: owns the ctx.skills interface. It does not know whether skills come from local files, embedded plugin data, or HTTP; providers register sources with ctx.skills.registerProvider(...), and the registry is host+per-scope layered. The shipped local implementation is dsh-skill-filesystem."
+ },
+ "@deepseek-ai/dsh-skill-filesystem": {
+  "zh": "ctx.skills 注册表的本地文件系统提供方：扫描本地项目、自定义和用户 skill 根目录，解析 SKILL.md 或平铺 Markdown skill 文件，并把提供方注册到 ctx.skills。",
+  "en": "Local filesystem provider for the ctx.skills registry: scans local project, custom, and user skill roots, parses SKILL.md or flat Markdown skill files, and registers the provider on ctx.skills."
+ },
+ "@deepseek-ai/dsh-skill-badge": {
+  "zh": "可选的内置 skill（技能）提供方，向 ctx.skills 贡献 dsh-badge。该 skill 提供官方「powered by dsh」Markdown 片段和随包分发的 PNG，供无法可靠导入远程图片的系统使用。",
+  "en": "Optional bundled skill provider that contributes dsh-badge to ctx.skills. The skill supplies the official “powered by dsh” Markdown snippets and the packaged PNG for systems that cannot import a remote image reliably."
+ },
+ "@deepseek-ai/dsh-tool-skill": {
+  "zh": "面向模型的 skill（技能）目录和 skill 工具。",
+  "en": "The model-facing skill catalog and skill tool."
+ },
+ "@deepseek-ai/dsh-commands": {
+  "zh": "由插件负责、供交互式 UI 适配器使用的面向用户命令注册表。插件命令注册 Agent Note定义了其边界与分发约定。",
+  "en": "Plugin-owned human-command registry consumed by interactive UI adapters. The plugin command registration Agent Note owns the boundary and dispatch contract."
+ },
+ "@deepseek-ai/dsh-command-feedback": {
+  "zh": "与触发方式无关的会话反馈，以及面向用户的 /feedback 采集。本包导出 recordFeedback(session, text)；该函数会追加一个仅写入日志的 feedback/record 事件。该插件通过 ctx.commands 注册一个全局命令，因此每个已组合的命令适配器都能发现它；随附的 Web 客户端无需模型轮次即可执行。",
+  "en": "Trigger-independent session feedback plus human-facing /feedback capture. The package exports recordFeedback(session, text), which appends one log-only feedback/record event."
+ },
+ "@deepseek-ai/dsh-goal": {
+  "zh": "事件溯源的同会话目标状态。该服务在 agent（智能体）的现有会话中保留一个当前待完成目标，同时将继续执行的权限作为进程本地续行启用状态。goal 领域 Agent Note 负责设计理由；goal 类型目录记录具体的数据形状。",
+  "en": "Event-sourced same-session goal state. The service retains one current completion objective in an agent's existing session while keeping permission to continue as process-local activation."
+ },
+ "@deepseek-ai/dsh-goal-round-driver": {
+  "zh": "ctx.goals 的同会话续行驱动器。它通过公开 Agent 与会话服务，把 phase 为 active 且已启用续行的目标转换为连续的 Goal Round；同会话驱动器 Agent Note 记载竞态与生命周期方面的设计理由。",
+  "en": "Same-session continuation driver for ctx.goals. It turns an active, armed goal into sequential goal rounds through the public Agent and session services; the same-session driver Agent Note owns the race and lifecycle rationale."
+ },
+ "@deepseek-ai/dsh-command-goal": {
+  "zh": "面向用户的 /goal 控制，基于 ctx.goals 实现。该插件通过 ctx.commands 注册一个全局命令，因此每个已组合的命令适配器都能发现并执行它，无需模型轮次。用户 goal 命令 Agent Note 负责用户体验与组合决策。",
+  "en": "Human-facing /goal control over ctx.goals. The plugin registers one global command through ctx.commands, so every composed command adapter discovers and executes it without a model turn."
+ },
+ "@deepseek-ai/dsh-plan-mode": {
+  "zh": "按 agent（智能体）分别记录到日志的 plan 协作状态，提供由部署方配置的引导内容、用于直接进入的 /plan [message] 命令、用于直接退出的 /plan off 命令，以及经用户评审的 exit_plan_mode 退出方式。Plan mode 是软引导；沙箱模式和批准策略各自强制执行限制，且不读写 plan 状态。",
+  "en": "Logged, per-agent plan collaboration state with deployment-owned guidance, direct /plan [message] entry and /plan off exit commands, and the reviewed exit_plan_mode exit."
+ },
+ "@deepseek-ai/dsh-token-meter": {
+  "zh": "通过单例 ctx.tokenMeter 服务进行具备回放感知能力的 token 测量。它从持久日志为每个会话推进一个隔离 fold，因此压缩（compaction）与其他压力敏感插件可以共享计量，无需依赖 CompactionEngine。",
+  "en": "Replay-aware token measurement through the singleton ctx.tokenMeter service."
+ },
+ "@deepseek-ai/dsh-compaction-basic": {
+  "zh": "基础压缩（compaction）后端：BasicCompactionEngine 实现 @deepseek-ai/dsh-compaction Service Definition，使用可复用的 ctx.tokenMeter 压力、token 预算保留与摘要。",
+  "en": "The basic compaction backend: a BasicCompactionEngine implementing the @deepseek-ai/dsh-compaction Service Definition with reusable ctx.tokenMeter pressure, token-budget retention, and summarization as a direct one-shot ctx.llm.st…"
+ },
+ "@deepseek-ai/dsh-command-compact": {
+  "zh": "通过 ctx.compaction 提供面向用户的 /compact 压缩（compaction）控制。该插件通过 ctx.commands 注册一个全局命令，因此组合中的每个命令适配器都能发现并执行它，无需模型轮次。排队手动压缩 Agent Note拥有接纳、锁与持久性决策。",
+  "en": "Human-facing /compact control over ctx.compaction. The plugin registers one global command through ctx.commands, so every composed command adapter discovers and executes it without a model turn."
+ },
+ "@deepseek-ai/dsh-subagent": {
+  "zh": "subagent seam 允许一个 agent（智能体）通过具名提供方把工作委派给子 agent。调用方统一使用 ctx.subagents 服务 API；提供方决定子 agent 在当前进程、其他进程，还是通过未来的传输方式运行。",
+  "en": "The subagent seam lets one agent delegate work to a child through a named provider."
+ },
+ "@deepseek-ai/dsh-subagent-spawn-in-process": {
+  "zh": "spawn 提供方会在当前进程中创建一个全新的子 Agent。子 agent（智能体）有自己的会话，看不到父 agent 的对话历史，并复用宿主的 agent 工厂及 LLM（大语言模型）/工具服务。",
+  "en": "The spawn provider creates a fresh child Agent in the current process. The child has its own session, sees no parent conversation history, and reuses the host's agent factory and LLM/tool services."
+ },
+ "@deepseek-ai/dsh-subagent-fork-in-process": {
+  "zh": "fork 提供方会创建一个进程内子 agent（智能体），并以父 agent 已完成的对话轮次作为初始内容。它与 spawn 共用全部运行机制；唯一的行为差异是会话初始内容。",
+  "en": "The fork provider creates an in-process child seeded with the parent's completed conversation turns. It shares all run mechanics with spawn; the session seed is the only behavioral difference."
+ },
+ "@deepseek-ai/dsh-tool-subagent-control": {
+  "zh": "可选的全局具名 send_message、interrupt_agent 与 list_agents 工具，是 ctx.subagents 之上的轻量适配器。绑定提供方的 dsh-tool-subagent 实例会为每种传输注册不同的委派工具；这个单独加载的包只注册一次共享控制工具，因此多个委派工具绝不会重复注册全局控制工具。",
+  "en": "The optional, globally named send_message, interrupt_agent, and list_agents tools are thin adapters over ctx.subagents. Provider-bound dsh-tool-subagent instances register distinct delegation tools per transport; this separately loaded package registers shared control tools once, so multiple delegation tools never register duplicate global controls."
+ },
+ "@deepseek-ai/dsh-tool-subagent-control/list-agents": {
+  "zh": "dsh-tool-subagent-control 的 list-agents 入口：在 send_message 与 interrupt_agent 之外追加 list_agents 工具，并把 subagents 与 agents 声明为加载时依赖。",
+  "en": "The list-agents entry of dsh-tool-subagent-control: adds the list_agents tool beside send_message and interrupt_agent, declaring subagents and agents as load-time dependencies."
+ },
+ "@deepseek-ai/dsh-tool-subagent": {
+  "zh": "基于一个已配置 ctx.subagents 提供方、面向模型的委派工具。更换提供方只会改变传输，不会改变执行约定。",
+  "en": "The model-facing delegation tool over one configured ctx.subagents provider. Changing the provider changes transport without changing the execution contract."
+ },
+ "@deepseek-ai/dsh-tool-subagent-report": {
+  "zh": "可选的子级作用域 report 工具，是 ctx.subagents.reportFrom() 之上的轻量适配器。它为每个可继续的进程内子级提供一条返回通道，指向启动该子级的 Agent，并安装指示子级使用该通道的提示词 section；该工具及其指引只存在于这些子级内部。",
+  "en": "The optional child-scoped report tool is a thin adapter over ctx.subagents.reportFrom(). It gives every continuable in-process child a return channel to the Agent that started it, and installs the prompt section that instructs the child to use it; the tool and its guidance exist only inside those children."
+ },
+ "@deepseek-ai/dsh-workflow-worker-thread": {
+  "zh": "本包为 WorkflowEngine 提供实现，每次运行使用一个 Node worker thread。worker 执行编排脚本；子 agent（智能体）留在宿主上，脚本通过带类型的宿主／worker 协议经由 ctx.subagents 访问它们。",
+  "en": "This package implements WorkflowEngine with one Node worker thread per run. The worker executes the orchestration script; child agents remain on the host and are reached through ctx.subagents over a typed host/worker protocol."
+ },
+ "@deepseek-ai/dsh-tool-workflow": {
+  "zh": "面向模型的 workflow 工具：运行一段扇出 subagent 的 JavaScript 编排脚本，并返回脚本的最终值。本包负责基于 ctx.workflowEngine 定义面向模型的 schema 和运行生命周期；脚本解析、执行、上限与取消位于 seam 之后，消费方仍负责面向父级的 schema 和结果包络。",
+  "en": "The model-facing workflow tool: run a JavaScript orchestration script that fans out subagents, and return the script's final value."
+ },
+ "@deepseek-ai/dsh-tool-call-timeout-policy": {
+  "zh": "工具调用超时强制执行器：单个 tools/execute 环绕分发监听器，会在 exec.signal 上设置单次调用的协作式截止时间；适用于声明了 timeoutMs 且声明位于其 ToolDefinition 上的工具。该截止时间先到时，它返回结构化 TOOL_TIMEOUT 结果。",
+  "en": "Tool-call timeout enforcer: a single tools/execute around-dispatch listener that arms a per-call cooperative deadline on exec.signal for a tool declaring timeoutMs on its ToolDefinition and returns a structured TOOL_TIMEOUT result…"
+ },
+ "@deepseek-ai/dsh-spill-local": {
+  "zh": "@deepseek-ai/dsh-spill 存储 seam 的本地文件系统实现。它注册为 ctx.spillStore，将工具产生的过大文本持久化到私有的会话级文件；定位信息是文件路径，取回指引会告诉模型对该路径使用 read 或 grep。",
+  "en": "The local-filesystem implementation of the @deepseek-ai/dsh-spill storage seam."
+ },
+ "@deepseek-ai/dsh-spill-policy": {
+  "zh": "工具结果 spill 策略：一个 tools/post-execute 转换器，用于防止过大的纯文本工具结果进入模型上下文。当最终结果超过 maxInlineBytes 时，它会通过 ctx.spillStore 保存完整文本，并将面向模型的结果替换为有界的首尾预览、后端定位信息与取回指引。",
+  "en": "The tool-result spill policy: a tools/post-execute transformer that keeps oversized plain-text tool results out of the model's context."
+ },
+ "@deepseek-ai/dsh-session-checkpoint-policy": {
+  "zh": "已持久化的 agent（智能体）的语义持久性策略。它会在模型适配器收到请求前、顶层工具正文可产生外部副作用前，以及每个 agent/pre-step 边界为事件溯源会话创建检查点，使前一响应与有序工具结果在下一个请求前已持久化。",
+  "en": "Semantic durability policy for persisted agents."
+ },
+ "@deepseek-ai/dsh-compaction-tool-result-pruner": {
+  "zh": "可安全回放、不依赖模型的剪枝服务（ctx.toolResultPruner）。它会将超出预算的 tool/result 表层节点改写为长度受限的头部、固定省略标记和长度受限的尾部，同时在仅追加会话日志中保留完整原始事件。",
+  "en": "The replay-safe model-free pruning service (ctx.toolResultPruner)."
+ },
+ "@deepseek-ai/dsh-tool-todo": {
+  "zh": "面向模型的 todo_write 工具：agent（智能体）的完整任务列表，每次调用都会整体替换。",
+  "en": "The model-facing todo_write tool: the agent's whole task list, replaced wholesale on each call."
+ },
+ "@deepseek-ai/dsh-tool-goal": {
+  "zh": "ctx.goals 的面向模型控制 API：get_goal、create_goal 和 update_goal。goal 工具 Agent Note 负责权限拆分与 Codex 风格用户体验。",
+  "en": "The model-facing control tools for ctx.goals: get_goal, create_goal, and update_goal. The goal-tool Agent Note owns the authority split and Codex-shaped UX."
+ },
+ "@deepseek-ai/dsh-tool-ralph": {
+  "zh": "面向模型的 ralph 工具运行固定的前台工作流，把一个不可变目标依次交给多个全新子 agent（智能体）。它展示如何把专用编排策略实现为基于 ctx.workflowEngine 和 ctx.subagents 的普通插件：不会向 agent-loop 添加 Ralph 模式或全新 agent loop（智能体循环），同会话的目标领域也保持独立。",
+  "en": "The model-facing ralph tool runs a fixed foreground workflow that gives one immutable objective to a sequence of fresh child agents."
+ },
+ "@deepseek-ai/dsh-tool-str-replace-editor": {
+  "zh": "基于 ctx.fs、面向模型的独立 str_replace_editor。它可与持久 Bash、一次性 Bash、沙箱 Bash 或其他终端接口组合。",
+  "en": "Standalone model-facing str_replace_editor over ctx.fs. It can be composed with persistent Bash, one-shot Bash, sandboxed Bash, or another terminal surface."
+ },
+ "@deepseek-ai/dsh-repeat-tool-reminder": {
+  "zh": "这是一个仅提供建议的循环中断器，而非面向模型的工具：它不会出现在工具列表中，不会否决或改写调用，只增加一种行为。它监视每个 agent（智能体）的工具调用流，统计以完全相同的规范化参数连续调用同一工具的次数；达到所配置的连续次数时，它会注入逐级增强的提示，要求模型停止重复、重新阅读上一次结果，并改用其他方案或结束任务。究竟是换一种方式重试、收集更多证据还是完成任务，仍完全由模型决定：合理的重复调用既不会延迟，也不会受阻。决策记录见 repeat-tool-reminder Agent Note。",
+  "en": "An advisory loop-breaker, not a model-facing tool: it never appears in the tool list, never vetoes or rewrites a call, and adds exactly one behavior — it watches each agent's stream of tool calls and counts runs of consecutive calls to the same tool with identical canonicalized arguments; at the configured count it injects escalating prompts asking the model to stop repeating, re-read the last result, and try another approach or finish."
+ },
+ "@deepseek-ai/dsh-web": {
+  "zh": "WebRuntime（ctx.web）定义 harness 具备哪些 web 访问能力（搜索 web、抓取 URL），并通过多个提供方实现，不把模型约定绑定到某个厂商的 API 形状。",
+  "en": "The WebRuntime (ctx.web) defines WHAT web access the harness has — search the web, fetch a URL — over multiple providers, without binding the model contract to one vendor's API shape."
+ },
+ "@deepseek-ai/dsh-web-search-deepseek": {
+  "zh": "由 DeepSeek 支持的 WebSearchProvider，用于 harness web 能力 seam（ctx.web）。",
+  "en": "A DeepSeek-backed WebSearchProvider for the harness web capability seam (ctx.web)."
+ },
+ "@deepseek-ai/dsh-tool-web": {
+  "zh": "面向模型的 web 工具套件 web_search 与 web_fetch，构建于 web 能力 seam（ctx.web）之上。它只负责面向模型的事项：工具名称、JSON Schema、snake_case 参数名称、提示词区段、结果数量上限、结果格式、HTML→markdown 呈现，以及承载结构化搜索来源或抓取摘要的 UI 呈现投影（presentCall、presentResult、output.presentationMeta）。",
+  "en": "The model-facing web tool suite — web_search and web_fetch — over the web capability seam (ctx.web). It owns model-facing concerns only: tool names, JSON schemas, snake_case argument names, prompt sections, the result-count bound, result formatting, HTML→markdown presentation, and the UI presentation projection (presentCall, presentResult, output.presentationMeta)."
+ },
+ "@deepseek-ai/dsh-tools": {
+  "zh": "工具注册表与执行流水线。工具插件注册各自的 schema 和执行器；agent loop（智能体循环）依次让每次调用经过 tools/pre-execute（可扩展的允许／拒绝门禁）→ 已注册的单调守卫 → tools/execute（供超时／重试／指标插件使用的环绕分发包装层）→ tools/post-execute（检查／替换结果、附加上下文）→ 由工具定义持有的 finalizeContent 边界 → 仅观测的 tools/result 通知。注册表还决定以何种方式向模型呈现工具：mode 配置可以选择原生 Function Calling（函数调用）、Code Mode，或同时选择两者；单个 agent 可用 presentAs 为自己遮蔽该默认值。",
+  "en": "Tool registry and execution pipeline. Tool plugins register their schemas and executors; the agent loop executes each call through tools/pre-execute (the extensible allow/deny gate), monotonic registered guards, tools/execute (an around-dispatch wrapper for timeout/retry/metrics plugins), tools/post-execute (inspect/replace results, attach context), and the observing tools/result notification."
+ },
+ "@deepseek-ai/dsh-system-prompt": {
+  "zh": "系统提示词组装注册表。插件可以贡献有序段、工具 schema 和具名变量。循环在每个步骤组装一次，并将结果渲染为完整的模型提示词。此插件拥有静态 harness 身份和全局部署 persona；agent（智能体）作用域的 persona 会遮蔽全局默认值。",
+  "en": "System prompt assembly registry. Plugins contribute ordered sections, tool schemas, and named variables. The loop assembles once per step and renders the result as the complete model prompt."
+ },
+ "@deepseek-ai/dsh-agent-loop": {
+  "zh": "agent（智能体）的唯一具体实现插件和循环驱动器。其包内部实现满足 Agent 接口，并驱动会话、轮次和步骤的生命周期。",
+  "en": "THE concrete agent plugin and loop driver. Its package-internal implementation satisfies the Agent interface and drives the session/turn/step lifecycle."
+ },
+ "@deepseek-ai/dsh-fs-sandbox": {
+  "zh": "SandboxedFileSystem 扩展 LocalFileSystem 并注册为 ctx.fs。它逐字继承全部文本存储机制（解析、stat、读取／流式读取、列出、原子写入、按读取、匹配、写入顺序执行的编辑临界区），只为 writeText/editText 增加按调用的模式围栏。读取始终直接通过：所有模式都允许读取。",
+  "en": "SandboxedFileSystem extends LocalFileSystem and registers as ctx.fs."
+ },
+ "@deepseek-ai/dsh-llm-deepseek": {
+  "zh": "harness LLM（大语言模型）seam 的 DeepSeek chat-completions 适配器：直接 fetch + SSE（Server-Sent Events，由 eventsource-parser 分帧），将官方协议格式（wire format。",
+  "en": "DeepSeek chat-completions adapter for the harness LLM seam: direct fetch + SSE (framed by eventsource-parser) translating the official wire format (source of truth: the API docs — guides/thinking_mode, guides/tool_calls, api/creat…"
+ },
+ "@deepseek-ai/dsh-code-runtime-worker-thread": {
+  "zh": "这是 @deepseek-ai/dsh-code-runtime seam 的 worker 线程实现：WorkerThreadCodeRuntime 会在每次运行中使用一个全新的 Node worker_threads.Worker，输入 TypeScript，由宿主侧剥离类型，通过消息端口桥接绑定，输出 { value, logs, error? }。",
+  "en": "Worker-thread implementation of the @deepseek-ai/dsh-code-runtime seam: WorkerThreadCodeRuntime runs each program in ONE fresh Node worker_threads.Worker — TypeScript in, type-stripped host-side, bindings bridged over the message…"
+ },
+ "@deepseek-ai/dsh-storage": {
+  "zh": "非会话数据的存储中心（ctx.storage）：具名后端注册表加已挂载的数据形式设施。中心自身不执行 IO：后端拥有介质，数据形式拥有语义。存储家族概述列出了这些包；领域 KV 存储 Agent Note记录了设计理由。",
+  "en": "Storage hub (ctx.storage) for non-session data: a named backend registry plus mounted data-form facilities. The hub performs no IO itself — backends own media, and data forms own semantics."
+ },
+ "@deepseek-ai/dsh-storage-json": {
+  "zh": "存储中心的 JSON 后端：配置根目录下每个单元使用一个人类可读的 <unit>.json 文件，注册为后端 json。设计见领域 KV 存储 Agent Note。",
+  "en": "JSON backend for the storage hub: one human-readable <unit>.json file per unit under a configured root, registered as backend json. Design: domain KV storage Agent Note."
+ },
+ "@deepseek-ai/dsh-storage-domain": {
+  "zh": "DeepSeek Harness 存储中心的领域数据形式：在所有已配置的后端注册后，公开可注入的 ctx.storageDomain 服务及对应的 ctx.storage.domain 投影。",
+  "en": "Domain data form for the DeepSeek Harness storage hub: exposes the injectable ctx.storageDomain service and the matching ctx.storage.domain projection after every configured backend is registered."
+ },
+ "@deepseek-ai/dsh-message-feedback": {
+  "zh": "本包提供由 Host 拥有、针对单条已完成 assistant 消息的可编辑反馈。它注册 ctx.messageFeedback，在 storage-domain 中为每个 Session 持久化一条绑定生命周期的伴随记录（sidecar），并发布 Host messageFeedback.list、messageFeedback.put 与 messageFeedback.delete 一元 R…",
+  "en": "Host-owned editable feedback for one finalized assistant message."
+ },
+ "@deepseek-ai/dsh-session-log-export": {
+  "zh": "Web Session 日志下载控制，使用 dsh-host-apiproxy 拥有的 Host 流式 ZIP 端点。Host 半包注册 /export；浏览器半包在 Session Header 中提供 111×32 的 Session log 操作，以及一个供该按钮与斜杠命令共用的下载控制器和弹窗。",
+  "en": "Web Session-log download control over the host-streamed ZIP endpoint owned by dsh-host-apiproxy."
+ },
+ "@deepseek-ai/dsh-workspace": {
+  "zh": "DeepSeek Harness 的 Workspace 实体注册表（ctx.workspaceRegistry）：通过领域数据形式存储持久 workspace 记录、稳定 workspace 顺序和按新到旧排列的候选会话索引。消费方看到 Workspace 接口；实体实现保持包私有。",
+  "en": "Workspace entity registry (ctx.workspaceRegistry) for the DeepSeek Harness: durable workspace records, stable workspace order, and a newest-first candidate session index stored through the domain data form."
+ },
+ "@deepseek-ai/dsh-session-projection-cache": {
+  "zh": "持久投影缓存（ctx.sessionProjectionCache）：把每个已注册投影单元的状态持久化为检查点，基于域数据形态（domain data form）每会话一条记录（session_projcache 域——出厂 JSON 后端将其落在配置的存储根目录下、workspace.json 旁边）。",
+  "en": "The persisted projection cache (ctx.sessionProjectionCache): durable checkpoints of every registered projection unit's state, one record per session on the domain data form (session_projcache domain — the shipped json backend land…"
+ },
+ "@deepseek-ai/dsh-session-stats": {
+  "zh": "注册 sessionStats projection 单元的函数插件：从步边界、流式 chunk、工具配对与已组装的 assistant 消息折叠出全日志会话数字——轮/步计数以及 LLM、工具、首 token、解码墙钟时间——经 session-projection 缝对外提供（registry 快照、变更流，以及每一个 projection 载体：history 尾页、session/projection 推送帧、会话列表行）。客户端由此渲染分页与压缩都无法改变的全会话数字；参考消费者是 Web 聊天统计条，其窗口折叠以相同字段名充当无单元时的回退。",
+  "en": "Function plugin registering the sessionStats projection unit: whole-log conversation figures — turn/step counts and the LLM, tool, first-token, and decode wall times — folded from step boundaries, stream chunks, tool pairs, and assembled assistant messages, and served through the session-projection seam."
+ },
+ "@deepseek-ai/dsh-host-directory-picker-auto": {
+  "zh": "目录选择 seam 的自适应选择器：一个只有 node 半侧的插件，在启动时一次性判定宿主处境，并把匹配的双面后端——-native 或 -browse——作为真实的 Loader 条目挂进内存根树（绝不持久化到配置文件；根树的 write() 是 no-op）。",
+  "en": "The adaptive chooser of the directory-picker seam: a node-half-only plugin that resolves the host's situation once at boot and mounts the matching dual-face backend — -native or -browse — as a real Loader entry in the in-memory ro…"
+ },
+ "@deepseek-ai/dsh-host-directory-picker-native": {
+  "zh": "目录选择 seam 的原生 OS 选择器后端：NativeDirectoryPicker 以 native 能力注册 ctx.directoryPicker，其 pick(signal) 每次调用打开一个原生选择器并解析出所选绝对路径（取消时为 null）。平台工具不经 shell 调用：macOS 使用 osascript，Linux 使用 Zenity 并以 KDialog 回退。",
+  "en": "The native-OS-chooser backend of the directory-picker seam: NativeDirectoryPicker registers ctx.directoryPicker with the native capability, whose pick(signal) opens one native chooser per call and resolves the chosen absolute path…"
+ },
+ "@deepseek-ai/dsh-host-plugin-inventory": {
+  "zh": "当前 Cordis Loader 树的只读 Host 投影。PluginInventoryGateway 注册 pluginInventory 服务，并发布一个由 Typert 生成的直接 Remote：pluginInventory/list。",
+  "en": "Read-only Host projection of the current Cordis Loader tree. PluginInventoryGateway registers the pluginInventory service and publishes one generated direct Remote, pluginInventory/list."
+ },
+ "@deepseek-ai/dsh-host-apiproxy": {
+  "zh": "所有客户端共用的 API 网关：TypeScript API 约定（src/api/，不依赖 Node，可从浏览器导入）、fetch 载体对（宿主侧 toFetchHandler、客户端侧 AbstractApiClient），以及提供 ctx.apiProxy 的宿主侧实现。该包不注册任何路由；HTTP 等载体自行包装 ctx.apiProxy。",
+  "en": "The API gateway shared by every client: the TypeScript API contract (src/api/, zero Node dependencies, importable from the browser), the fetch carrier pair (toFetchHandler on the host side, AbstractApiClient plus platform subclasses on the client side), and the host-side implementation that provides ctx.apiProxy. The package registers no routes; carriers wrap ctx.apiProxy themselves."
+ },
+ "@deepseek-ai/dsh-cordis-host-runner": {
+  "zh": "由模型挂载的动态包在 host 侧的那一半：定义注册表、host 半所用的 node:vm 沙箱与 fiber 生命周期、invoke handler 表，以及由某个浏览器页面执行的 run 往返。以 ctx.dynamicCordisRunner 提供。面向模型的工具在 @deepseek-ai/dsh-tool-cordis 中。",
+  "en": "The host half of model-mounted dynamic packages: the definition registry, the node:vm sandbox and fiber lifecycle for host halves, the invoke handler table, and the run round trip a browser page carries out."
+ },
+ "@deepseek-ai/dsh-web-app": {
+  "zh": "dsh 浏览器表层组合包。cordis.patch.yml 叠加在 dsh-base 之上：设置 coding persona，插入 Web 宿主行（webserver、API 网关、workspace、投影缓存、存储）、浏览器插件名录与始终挂载的客户端插件重载链（dsh-client-hmr，在重建 watcher 改写客户端 bundle 之前保持空闲），并挂载本包的 web-runtime 粘合插件（配置为 {printUrl, surfaceContext, trustedHosts}）。",
+  "en": "The dsh browser-surface bundle. cordis.patch.yml rides over dsh-base: it sets the coding persona, inserts the Web host rows (webserver, API gateway, workspace, projection cache, storage) and the browser plugin roster, the always-on client-plugin reload chain, and mounts this package's web-runtime glue plugin."
+ },
+ "@deepseek-ai/dsh-web-app/startup": {
+  "zh": "dsh-web-app 的 web 启动行：注入命令行参数并发布 webStartup（解析后的 Web 标志，如 host/port），供 webserver 等 Web 宿主行读取。",
+  "en": "The web-startup row of dsh-web-app: injects cmdlineArgs and provides webStartup (the parsed Web flags such as host/port) that the webserver and other Web host rows consume."
+ },
+ "@deepseek-ai/dsh-host-webserver": {
+  "zh": "Web HTTP 与 upgrade route 注册插件（默认导出 WebServer，配置为 {host, port}）：一个在激活时开始监听的 node:http 服务器，提供 ctx.webServer。register(route) 添加具名的 exact／prefix HTTP route。",
+  "en": "Web HTTP and upgrade-route registration plugin (default-exported WebServer, config {host, port}): a node:http server that listens on activation and provides ctx.webServer."
+ },
+ "@deepseek-ai/dsh-client-hmr": {
+  "zh": "为通过脚本加载的客户端插件提供热重载。web 组合包无条件挂载该行；没有重建 watcher（pnpm run dev:web）改写客户端 bundle 时，轮询观察不到变化，链路保持空闲。",
+  "en": "Hot reload for script-loaded client plugins. The web bundle mounts the row unconditionally; without a rebuild watcher (pnpm run dev:web) rewriting client bundles, the poll observes no changes and the chain stays idle."
+ },
+ "@deepseek-ai/dsh-client-modules": {
+  "zh": "客户端模块系统：Node 内部 ESM loader 的浏览器端对等实现，以惰性 CJS 表实现。web 外壳挂载 vendored cordis Loader 来治理配置项（fiber 生命周期、inject 等待、update/refresh），并通过其 internal 约定注入该包的 ClientModuleLoader；vendored 一侧唯一的消费点是 EntryTree.import，因此替换 internal 恰好只会替换「插件代码如何到达」，不会改变其他内容。",
+  "en": "Client module system: the browser peer of Node's internal ESM loader, built as a lazy CJS table. The web shell mounts the vendored cordis Loader for entry governance (fiber lifecycle, inject waiting, update/refresh) and injects this package's ClientModuleLoader through its internal contract."
+ },
+ "@deepseek-ai/dsh-client-connection": {
+  "zh": "协议消费层：客户端插件的 apply 会挂载 ctx.connection（共享 API 客户端 + 当前页面的 loopback 状态 + 可观察且按 generation 生效的 hostDescription + 单消费方流循环启动器）；导出表层携带协议约定类型、AbstractApiClient 抽象，以及循环的 sink／配置类型。",
+  "en": "Wire consumer layer: the client plugin's apply mounts ctx.connection (shared api client + current-page loopback state + observable generation-scoped hostDescription + single-consumer stream-loop starter); the export face carries t…"
+ },
+ "@deepseek-ai/dsh-api-remotes": {
+  "zh": "为本应用选定的 Host Remote 能力提供双侧 BFF。Host 入口负责 Agent/Session 身份策略；Client 入口以运行时值形式导入生成的 /remote 产物，通过 ctx.remote.$mount() 挂载每项贡献，并重新导出对应的声明合并。Client 业务包依赖该外观，而不依赖 Gateway 实现或单独的 Remote 运行时入口。",
+  "en": "Two-sided BFF for Host Remote capabilities selected by this application."
+ },
+ "@deepseek-ai/dsh-client-runtime": {
+  "zh": "客户端 cordis 启动与不依赖 React 的对象服务：SlotRegistry 包装 SlotCore 并提供 renderer 数据源；SessionRuntime 拥有 Session 对象、列表与 scope 状态，以及供已注册 conversation view target 共用的事件窗口与历史分页。",
+  "en": "Client cordis boot and React-free object services: SlotRegistry wraps SlotCore and supplies renderer data sources; SessionRuntime owns Session objects, list and scope state, and the shared event window and history paging used by r…"
+ },
+ "@deepseek-ai/dsh-cordis-client-runner": {
+  "zh": "动态双半插件包的浏览器半。host 侧 runner 把每个定义的代码留在进程内存里，并经一条 cordis/request-run 事件向打开的页面发问「要不要运行它」；本包回答这个请求、把定义变成活的浏览器插件，并把 dynamicCordisRunner/retract 事件变回干净的页面。",
+  "en": "Browser half of dynamic dual-half plugin packages."
+ },
+ "@deepseek-ai/dsh-client-ui-theme": {
+  "zh": "主题插件：基于 --dsw- token 基础样式表（静态尺度 + 别名语义层）的 ThemeRuntime。该服务拥有实时主题偏好（light／dark／system），将 system 通过 prefers-color-scheme 解析为实际主题，并发布不可变的 ThemeSnapshot，通过 theme/change 事件通知变化；它绝不接触 DOM：ui-layout 的呈现器会应用解析后的快照（html { color-scheme }、body[data-ds-dark-theme]，以及主题的别名 token 内联变量）。来自回环地址的浏览器会先以 system 立即提供该服务，随后在后台加载 ui-theme.preference，并将每次内置主题选择通过 Host settings API 写入；其本地提供方默认将设置存入 $DSH_HOME/settings.yaml。",
+  "en": "Theme plugin: ThemeRuntime over the --dsw- token base stylesheets (static scale + alias semantic layers). The service owns the live theme preference (light/dark/system), resolves system through prefers-color-scheme, and publishes immutable ThemeSnapshots on the theme/change event; it never touches the DOM — ui-layout's renderer applies the resolved snapshot."
+ },
+ "@deepseek-ai/dsh-client-locale": {
+  "zh": "locale 插件：LocaleRuntime——zh／en 偏好以 locale.preference 存储在 $DSH_HOME/settings.yaml 中；若没有显式 Host 值，全新浏览器会暂时使用 navigator 请求的语言（按主子标签匹配；若其请求的语言本应用都不提供，则使用 zh）。Host 读取在插件激活后执行，因此 settings 服务不可用不会阻塞页面。",
+  "en": "Locale plugin: LocaleRuntime — the zh/en preference stored as locale.preference in $DSH_HOME/settings.yaml; when that explicit Host value is absent, a fresh browser starts provisionally in the language navigator asks for (primary-…"
+ },
+ "@deepseek-ai/dsh-client-ui-layout": {
+  "zh": "外壳插件：三栏 AppFrame（拖动手柄与让步链）加 ctx.layout 面板几何服务；它注册到运行时拥有的 root slot，并声明 sidebar、conversation、details 和 conversation.empty。该包还提供主题呈现器：消费解析后的 ctx.theme 快照，并把配色方案与别名 token 投影到 document。",
+  "en": "Shell plugin: three-column AppFrame (drag handles and concession chain) plus the ctx.layout panel-geometry service; it registers into the runtime-owned root slot and declares sidebar, conversation, details, and conversation.empty. The package also provides the theme renderer, which consumes resolved ctx.theme snapshots and projects the color scheme and alias tokens onto the document."
+ },
+ "@deepseek-ai/dsh-client-ui-sidebar": {
+  "zh": "侧边栏外壳插件：负责字标、New Session 操作、布局持有的折叠控件、可感知滚动的区域 seat，以及固定在底部的 Settings seat。ui-workspace 持有渲染到 sidebar.workspaces 的 Workspace 与 Session 浏览器；本包既不派生其中的行，也不持有其视图偏好。折叠到布局拥有的 56px 轨道仍属于本地呈现行为。约定：slot 系统标准。",
+  "en": "Sidebar shell plugin: the wordmark, New Session action, layout-owned collapse control, scroll-aware region seat, and bottom-pinned Settings seat."
+ },
+ "@deepseek-ai/dsh-client-ui-settings": {
+  "zh": "设置领域的底座，本身不含任何呈现内容。它提供 ctx.settingsScope——每个偏好设置行绑定自己那份持久化命名空间分区所用的宿主传输层；并声明由注册方填充的设置 slot 类型：settings.trigger／settings.header／settings.close、settings.action、settings.section、settings.plugins.tab 和 settings.onboarding。",
+  "en": "The settings domain base layer, with two roles and no presentation of its own. It provides ctx.settingsScope, the Host transport every preference row binds its durable namespace section through, and declares the settings slot types registrants fill: settings.trigger / settings.header / settings.close, settings.action, settings.section, settings.plugins.tab, and settings.onboarding."
+ },
+ "@deepseek-ai/dsh-client-ui-settings-general": {
+  "zh": "设置外壳与无特定功能归属的文案。它占用 sidebar.settings，把 settings.section 账本投影成导航、把 settings.onboarding 投影成引导流程，并注册触发器、标题栏与关闭控件内容、本地配置文件操作、「通用」分区及 settings 字典；具体功能行与分区仍由各自的功能包提供。",
+  "en": "Settings shell, ownerless copy, and durable product-onboarding namespace. It occupies sidebar.settings with the trigger chrome and modal settings panel, projects the settings.section ledger into the navigation and the settings.onboarding ledger into one mounted step at a time, and registers everything on the Settings pages that belongs to no single feature."
+ },
+ "@deepseek-ai/dsh-client-ui-settings-models": {
+  "zh": "模型设置与产品引导插件。同一个 client Cordis 插件会注册 Models 页面和两个有序的首次使用弹窗：版本化内测声明，以及按条件显示的 DeepSeek 官方凭据步骤。Models 平面把 llm.providers、settings.describe 与 credentials.describe 三个协议领域汇聚为一个共享快照。",
+  "en": "Models settings and product-onboarding plugin. The same client Cordis plugin registers the Models page plus two ordered first-run dialogs: a versioned internal-testing notice and the conditional official-DeepSeek credential step. The Models plane joins the llm.providers, settings.describe, and credentials.describe wire domains into one shared snapshot."
+ },
+ "@deepseek-ai/dsh-client-ui-settings-plugin-inventory": {
+  "zh": "Web 设置中的只读插件列表标签页。浏览器插件注册一个 id 为 all 的本地化 settings.plugins.tab 贡献；“插件”分区拥有导航入口与标签栏。插件激活期间不会读取 Remote；首次选择该标签页时才挂载组件，并通过 api-remotes 懒调用 ctx.remote.pluginInventory.list()。",
+  "en": "Read-only Plugin list tab for Web Settings. The browser plugin registers one localized settings.plugins.tab contribution with id all; the Plugins section owns the navigation entry and tab chrome."
+ },
+ "@deepseek-ai/dsh-client-ui-conversation": {
+  "zh": "会话领域：骨架（标题栏／标签页／编辑器／空状态）、聊天视图（分组步骤摘要流、流式尾部隔离与轮次状态）、编辑器 dock（与输入区一同 sticky 的会话统计行）、输入区 dock（队列行加 todo 计划条）、详情壳层，以及按 scope 寻址的 ConversationController。工具展示属于 ui-tool。",
+  "en": "Conversation domain: skeleton (header/tabs/composer/empty state), chat view (grouped step-summary flow, streaming tail isolation, and turn status), composer dock (session stats sticky with the input), input dock (queue rows plus t…"
+ },
+ "@deepseek-ai/dsh-client-ui-tool": {
+  "zh": "Client 工具展示插件。ui-conversation 通过 conversation.chat.node 的匹配 key 分发每个已排序的 tool-call Conversation Node；本包渲染其中的 root 及其 Code Dispatch 子调用，并把每个原子调用通过 keyed slot tool.call.toolview 分发。没有注册的工具名称使用通用卡片。",
+  "en": "Client Tool presentation plugin. ui-conversation dispatches each ordered tool-call Conversation Node through the matching key of conversation.chat.node; this package renders its root and Code Dispatch children, then dispatches eve…"
+ },
+ "@deepseek-ai/dsh-client-ui-cordis": {
+  "zh": "Cordis 动态插件的浏览器半：一个覆盖整个框架的面板，操作 host 持有的全部定义；以及一张只读的 cordis_define 卡片，记录某个会话定义了什么。",
+  "en": "Cordis dynamic-plugin surfaces, browser half: a frame-wide panel that operates every definition the host holds, and a read-only cordis_define card that records what a session defined."
+ },
+ "@deepseek-ai/dsh-client-ui-workflow-run": {
+  "zh": "这个浏览器插件把持久化的顶层工作流运行重建为独立 Chat 节点。它消费由 dsh-tool-workflow 拥有的四类 tool-workflow/ Session 事件，注册一个 ConversationNodeDefinition，并通过 keyed conversation.chat.node slot 渲染，不改变现有工作流工具卡。",
+  "en": "The browser plugin that reconstructs durable top-level workflow runs as independent Chat nodes."
+ },
+ "@deepseek-ai/dsh-client-ui-deliverables": {
+  "zh": "产出文件与可点击文件引用功能的属主。Node 侧向系统提示词 registry 注册最终回复指引；浏览器侧把已完成轮次末尾的产出文件行注册到 chat 视图的 conversation.chat.turnTail slot，并将收尾正文中匹配的行内代码引用转换为链接。正式提供的组合中只有 Web patch 加载本包；从 cordis.yml 中删去这一项会同时移除提示词、文件行与正文链接。",
+  "en": "Produced-files and clickable-reference feature owner."
+ },
+ "@deepseek-ai/dsh-client-ui-workspace": {
+  "zh": "共享 Workspace 浏览器与选择器插件。WorkspaceBrowser 填充侧边栏的 sidebar.workspaces slot，WorkspacePicker 则填充页面局部 Session Intent 主视觉区的 conversation.hero.workspace slot；两个界面使用同一套 Workspace 菜单和添加流程。",
+  "en": "Shared Workspace browser and picker plugin."
+ },
+ "@deepseek-ai/dsh-client-ui-input-trigger": {
+  "zh": "输入触发流水线插件：光标处的 / 与 @ 检测（词边界 + guard tier 规则）、分组候选菜单，以及把 pick 路由到已注册 source。ctx.inputTriggers 拥有 source roster，并按会话 scope（sessionOf）各解析一个 InputTriggerController。",
+  "en": "Input trigger pipeline plugin: / and @ detection under the caret (word-boundary + guard-tier rules), the grouped candidate menu, and pick routing to registered sources."
+ },
+ "@deepseek-ai/dsh-client-ui-commands": {
+  "zh": "客户端命令 API（ctx.commandUi）：以会话为 key 的命令目录缓存、带 matchSpace／matchEnter 决策钩子的 / 命令 source、三类派发（execute／popupSelect／leadingInput），以及面向业务包的 popupSelect 注册。Web 命令 Agent Note 记录了这项决策。",
+  "en": "Client command API (ctx.commandUi): the session-keyed command-directory cache, the / command source with matchSpace/matchEnter decision hooks, three-kind dispatch (execute / popupSelect / leadingInput), and popupSelect registratio…"
+ },
+ "@deepseek-ai/dsh-client-ui-skill": {
+  "zh": "skill（技能）调用 source 的浏览器端：把 / 触发的 skill source 注册进 ctx.inputTriggers。普通会话的候选来自 skill.list RPC，以每次调用的 ClientSessionContext 投影中的 {sessionId} 寻址，host 从会话 header 解析 cwd。宿主提供每一个用户可调用的 skill。",
+  "en": "Skill invocation source, browser half: registers the /-trigger skill source into ctx.inputTriggers."
+ },
+ "@deepseek-ai/dsh-client-ui-subagent": {
+  "zh": "Web subagent 功能 owner：向 conversation.session.header.actions 贡献可懒加载展开的目录树，向会话编辑器链贡献按原因区分的只读替代呈现，并保留注册到 ctx.inputTriggers 的既有 @ 引用 source。",
+  "en": "Web subagent feature owner: contributes the lazily expandable catalog tree to conversation.session.header.actions, reason-specific read-only replacements to the conversation composer chain, and the existing @ reference source to c…"
+ },
+ "@deepseek-ai/dsh-client-ui-jobs": {
+  "zh": "Web 后台任务特性的归属方：向 conversation.session.header.actions 贡献一个条目，列出当前会话可见的 ctx.jobs 记录。数据完全来自 dsh-client-runtime 从 session/jobs 帧折叠出的 jobsBySession 列表镜像，因此本包不发任何 RPC，除弹层开合外不持有任何状态。",
+  "en": "Web background-job feature owner: contributes one entry to conversation.session.header.actions listing the ctx.jobs records this session can see."
+ },
+ "@deepseek-ai/dsh-client-ui-goal": {
+  "zh": "Goal 界面插件（浏览器端）：GoalBar 条带是 conversation.input.dock composer 上下文堆栈中的第二张独立卡片（order 10，位于 Todo 之后、Queue 之前）。活值经 useProjection('goal') 到达，因此本插件不持有领域 store、不设刷新链、不挂事件监听；slot 注入面只携带四个变更动词（edit / pause / resume / clear，经 ctx.remote.goals 调用）。",
+  "en": "Goal surface plugin, browser half: the GoalBar strip is the second standalone card in the conversation.input.dock composer-context stack (order 10, after Todo and before Queue). The live goal arrives through useProjection('goal'), so the plugin owns no domain store, refresh chain, or event listener; the slot inject face carries only the four mutation verbs (edit / pause / resume / clear through ctx.remote.goals)."
+ },
+ "@deepseek-ai/dsh-client-ui-message-feedback": {
+  "zh": "单条消息反馈插件的浏览器侧：一对 Like/Dislike 按钮加一个可选备注，作为 conversation.chat.assistant-actions 条带的 feedback 条目（order 10）贡献。该条带由 ui-conversation 声明，渲染在已定稿助手消息的 IconActions 行内、复制与分支之间，因此控件沿用该行的样式与 hover 行为。",
+  "en": "Per-message feedback plugin, browser half: a Like/Dislike pair plus an optional note, contributed as the feedback entry (order 10) of the conversation.chat.assistant-actions strip."
+ },
+ "@deepseek-ai/dsh-client-ui-model-selection": {
+  "zh": "模型选择插件（浏览器侧）：两个入口共用一份会话级目录，由 ModelDirectoryResolver（ctx.modelDirectories）持有。",
+  "en": "Model selection plugin, browser half: TWO entries over ONE per-session directory owned by ModelDirectoryResolver (ctx.modelDirectories)."
+ },
+ "@deepseek-ai/dsh-client-ui-permission-presets": {
+  "zh": "面向两种不同生命周期的浏览器权限界面。「通用」设置行读取显式暴露的 permission Settings 描述符，从 host 的动态 defaultPreset enum 中推导选项，并携带描述符的 revision 写入一条 settings.mutate 路径操作。它的 observable 经 slot 系统的 hooks 格传递，因此 React 钩子由渲染器绑定。",
+  "en": "Permission browser surfaces for two different lifetimes."
+ },
+ "@deepseek-ai/dsh-client-ui-agent-preset": {
+  "zh": "agent preset 的各个表层：General 设置中的一行，用于选择新建会话据以组装的 preset；新建会话界面上的一枚 chip，用于选择下一个会话的 preset；会话标题旁的一个只读标签；以及一个设置页分区，用于管理名单——复制、删除、默认值，以及通往 preset 自身文件的入口。",
+  "en": "The agent-preset surfaces: a General-settings row choosing which preset new sessions are composed from, a chip on the new-session screen choosing the next session's, a read-only label in the session header, and a settings section…"
+ },
+ "@deepseek-ai/dsh-client-ui-settings-plugins": {
+  "zh": "插件设置分区及其插件配置标签页。该分区拥有标题与紧凑的标签栏；功能插件通过 settings.plugins.tab 贡献页面。本包自己的标签页为每个配置由用户拥有的 Host 插件展示一张可展开卡片。卡片展示插件名称及其管辖范围；就地展开后是绑定到该插件 settings 命名空间的手写控件，每个字段标注用户是否覆盖过它，并提供重置回部署组装值的入口。",
+  "en": "The Plugins settings section and its Plugin configuration tab. The section owns the heading and compact tab chrome; feature plugins contribute pages through settings.plugins.tab."
+ },
+ "@deepseek-ai/dsh-client-ui-plan": {
+  "zh": "Plan mode 状态徽章，纯浏览器 surface 插件。浏览器侧占用会话声明的 conversation.input.plan 单实例 seat（位于 access 模式控件右侧）；node 侧是空 apply（roster 行）。",
+  "en": "Plan-mode status chip, a pure browser surface plugin."
+ },
+ "@deepseek-ai/dsh-client-ui-user-questions": {
+  "zh": "Web 提问功能插件：其浏览器侧把 question 条目注册到会话拥有的 conversation.composer 键控 slot 中。其主机侧刻意为空——在那里挂载 dsh-tool-ask-user 会把工具放进注册表的全局层，而全局层会并入每一个 agent（智能体），无论它由哪个 preset 组装，于是一个「两工具」的 benchmark preset 实际会呈现三个。",
+  "en": "Web question feature plugin: its browser half registers the question entry in the conversation-owned conversation.composer keyed slot."
+ },
+ "@deepseek-ai/dsh-client-ui-trajectory": {
+  "zh": "Trajectory 渲染按轮次组织的事件记录表，其中可选择用户、助手、工具和嵌套子工具记录。较粗的分割线标示轮次边界，紧凑的行内标记标识步骤，主记录表仅保留索引、事件和内容；选择记录则会打开局部检查器，查看 token 用量、耗时、输入、输出和计时。可滚动的概述区域默认保持滚动条滑块透明，直到鼠标悬停该区域或其中包含键盘焦点时才显示，同时不改变滚动条预留的几何空间。",
+  "en": "Trajectory renders a turn-aware event ledger with selectable User, Assistant, Tool, and nested Subtool records."
+ },
+ "@deepseek-ai/dsh-agent-presets": {
+  "zh": "按 preset 组装 agent（智能体）。preset 是一个目录，其中放置一份 agent.cordis.yml；roster 在整个进程内只把它挂载一次（常驻 scope），命名它的每个会话通过把自己 agent 的 scope key 认父到该挂载（dsh-scope 的父链）来加入。",
+  "en": "Per-preset agent composition. A preset is a directory holding one agent.cordis.yml; the roster mounts it ONCE per process under a standing scope, and each session that names it joins by having its agent scope key parented to the m…"
+ },
+ "@deepseek-ai/dsh-persona": {
+  "zh": "把 agent（智能体）人设做成一个可组装的行：它既可以遮蔽部署级人设，也可以拥有完整系统提示词。",
+  "en": "The agent persona as a composable row. It can either shadow the deployment persona or own the complete system prompt."
+ },
+ "@deepseek-ai/dsh-tool-ask-user": {
+  "zh": "模型侧 ask_user_question 工具，基于 ctx.userQuestions 实现。当模型需要确认、选择结果或缺失的信息才能继续时，它可以借此向用户提出简明问题。",
+  "en": "Model-facing ask_user_question tool over ctx.userQuestions. It lets the model ask the human a concise question when it needs confirmation, a choice, or missing information before continuing."
+ },
+ "@deepseek-ai/dsh-tool-cordis": {
+  "zh": "自引用 Cordis 工具集：五个面向模型的工具（cordis_inspect、cordis_define、cordis_run、cordis_stop、cordis_undefine），操作当前 DSH 进程中的实时运行时。注册表、vm 沙箱与浏览器广播属于 dsh-cordis-host-runner（ctx.dynamic），本工具集注入它。",
+  "en": "The self-referential Cordis toolset: five model-facing tools over the live runtime in the current DSH process. The registry, the vm sandbox, and the browser broadcast belong to dsh-cordis-host-runner (ctx.dynamic), which this toolset injects."
+ },
+ "@deepseek-ai/dsh-client-ui-directory-picker-native": {
+  "zh": "原生目录选择界面：原生选取交互的浏览器半边。它通过 ui-workspace 的两个 directory-flow 洞装入一个无渲染占位者，每次收到 open 请求就用 ctx.workspaces.pickDirectory() 驱动本地 Host 的操作系统选择框，然后回报恰好一个结果——选中的路径、取消、或失败。",
+  "en": "Native directory-picker surface: the browser half of the native picking interaction. It fills ui-workspace's two directory-flow holes with a renderless occupant that answers each open request by driving the local Host's OS chooser through ctx.workspaces.pickDirectory(), then reports exactly one outcome — a picked path, a cancellation, or a failure."
+ }
+}
